@@ -1,0 +1,6 @@
+[submodule "luau"]
+	path = luau
+	url = https://github.com/luau-lang/luau
+[submodule "luajit"]
+	path = luajit
+	url = https://github.com/LuaJIT/LuaJIT
