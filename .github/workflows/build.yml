@@ -2,6 +2,8 @@ name: Build Lua Distributions
 
 on: push
 
+permissions: {}
+
 # TODO:
 #- create releases?
 #- use permissions: for safety
