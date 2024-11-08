@@ -9,12 +9,16 @@ on: push
 #- optimize builds to ensure that needless files are not being compiled (minimize the work being done)
 #- test and improve based on results
 #- create releases?
+#- use defaults: to deduplicate entries in jobs
+#- use permissions: for safety
+#- combine artifacts?
 
 jobs:
   build-luau:
     strategy:
       matrix: # using ubuntu-20.04 to build a Linux binary targeting older glibc to improve compatibility
         os: [{name: ubuntu, version: ubuntu-20.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
+      fail-fast: false
     name: Build Luau (${{ matrix.os.name }})
     runs-on: ${{ matrix.os.version }}
     defaults:
@@ -38,10 +42,12 @@ jobs:
           name: luau-${{matrix.os.name}}
           path: ${{ matrix.os.name == 'windows' && 'luau/Release/luau.exe' || 'luau/luau' }}
           compression-level: 9
+          if-no-files-found: error
   build-luajit:
     strategy:
       matrix: # using ubuntu-20.04 to build a Linux binary targeting older glibc to improve compatibility
         os: [{name: ubuntu, version: ubuntu-20.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
+      fail-fast: false
     name: Build LuaJIT (${{ matrix.os.name }})
     runs-on: ${{ matrix.os.version }}
     defaults:
@@ -57,7 +63,7 @@ jobs:
       - name: Build with MSVC
         if: matrix.os.name == 'windows'
         run: |
-          msvcbuild.bat amalg static
+          .\msvcbuild.bat amalg static
       - name: Build with GNU Make
         if: matrix.os.name != 'windows'
         run: |
@@ -69,11 +75,13 @@ jobs:
           name: luajit-${{matrix.os.name}}
           path: ${{ matrix.os.name == 'windows' && 'luajit/src/luajit.exe' || 'luajit/src/luajit' }}
           compression-level: 9
+          if-no-files-found: error
   build-lua:
     strategy:
       matrix: # using ubuntu-20.04 to build a Linux binary targeting older glibc to improve compatibility
-        os: [{name: ubuntu, version: ubuntu-20.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
+        os: [{name: ubuntu, version: ubuntu-20.04, platform: linux}, {name: macos, version: macos-latest, platform: macosx}, {name: windows, version: windows-latest, platform: mingw }]
         lua: [{name: '5.1', directory: lua51}, {name: '5.2', directory: lua52}, {name: '5.3', directory: lua53}, {name: '5.4', directory: lua54}]
+      fail-fast: false
     name: Build Lua ${{ matrix.lua.name }} (${{ matrix.os.name }})
     runs-on: ${{ matrix.os.version }}
     steps:
@@ -92,7 +100,7 @@ jobs:
         if: matrix.os.name != 'windows'
         working-directory: ./${{ matrix.lua.directory }}/src
         run: |
-          make
+          make ${{ matrix.os.platform }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -100,3 +108,4 @@ jobs:
           name: ${{ matrix.lua.directory }}-${{matrix.os.name}}
           path: ${{ format(matrix.os.name == 'windows' && '{0}/src/lua.exe' || '{0}/src/lua', matrix.lua.directory) }}
           compression-level: 9
+          if-no-files-found: error
