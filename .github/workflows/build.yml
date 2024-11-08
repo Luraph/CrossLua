@@ -3,16 +3,14 @@ name: Build Lua Distributions
 on: push
 
 # TODO:
-#- macos fat binary
-#- only rebuild when needed
-#- test and improve based on results
 #- create releases?
-#- use defaults: to deduplicate entries in jobs
 #- use permissions: for safety
 #- combine artifacts? and improve filenames
 #- make lua54 a submodule
-#- branch protection rules
-#- ensure builds are runnable
+#- parallelized builds (public repos get allocated more cpus, so either accomodate that or use as many cpus as possible)
+#- cross compile since windows more expensive than linux and macos more expensive than windows (prob split into issue)
+#- add luraph repo wiki page for updating binaries
+#- encourage use of github wikis for internal documentation
 
 jobs:
   build-luau:
@@ -35,12 +33,16 @@ jobs:
         run: |
           cmake . -DCMAKE_BUILD_TYPE=Release
       - name: Build with CMake
+        env:
+          # Create fat binary on macOS for compatibility with ARM64 and Intel
+          # (for compatibility with older macintosh devices)
+          CMAKE_OSX_ARCHITECTURES: ${{ matrix.os.name == 'macos' && 'x86_64;arm64' || '' }}
         run: |
           cmake --build . --target Luau.Repl.CLI --config Release -j 2
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: luau-${{matrix.os.name}}
+          name: luau-${{ matrix.os.name }}
           path: ${{ matrix.os.name == 'windows' && 'luau/Release/luau.exe' || 'luau/luau' }}
           if-no-files-found: error
   build-luajit:
@@ -66,20 +68,39 @@ jobs:
         if: matrix.os.name == 'windows'
         run: |
           .\msvcbuild.bat static
-      - name: Build with GNU Make
-        if: matrix.os.name != 'windows'
+      - name: Build for macOS
+        if: matrix.os.name == 'macos'
+        env:
+          MACOSX_DEPLOYMENT_TARGET: 10.14
+          BUILDMODE: static
         run: |
-          MACOSX_DEPLOYMENT_TARGET=10.14 make amalg BUILDMODE=static
+          # LuaJIT's makefile does not allow multiple architectures to be targetted per build,
+          # so we must do two seperate compiles and create universal binary with lipo.
+
+          make TARGET_FLAGS="-arch arm64"
+          mv luajit ../luajit-arm64
+          make clean
+
+          make TARGET_FLAGS="-arch x86_64"
+          mv luajit ../luajit-x64
+
+          lipo -create -output luajit ../luajit-arm64 ../luajit-x64
+      - name: Build with GNU Make
+        if: matrix.os.name == 'linux'
+        env:
+          BUILDMODE: static
+        run: |
+          make amalg
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: luajit-${{matrix.os.name}}
+          name: luajit-${{ matrix.os.name }}
           path: ${{ matrix.os.name == 'windows' && 'luajit/src/luajit.exe' || 'luajit/src/luajit' }}
           if-no-files-found: error
   build-lua:
     strategy:
       matrix: # using ubuntu-20.04 to build a Linux binary targeting older glibc to improve compatibility
-        os: [{name: ubuntu, version: ubuntu-20.04, platform: linux}, {name: macos, version: macos-latest, platform: macosx}, {name: windows, version: windows-latest, platform: mingw }]
+        os: [{name: ubuntu, version: ubuntu-20.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
         lua: [{name: '5.1', directory: lua51}, {name: '5.2', directory: lua52}, {name: '5.3', directory: lua53}, {name: '5.4', directory: lua54}]
       fail-fast: false
     name: Build Lua ${{ matrix.lua.name }} (${{ matrix.os.name }})
@@ -96,14 +117,19 @@ jobs:
       - name: Setup MSVC environment
         if: matrix.os.name == 'windows'
         uses: ilammy/msvc-dev-cmd@v1
-      - name: Build with MSVC
+      - name: Build for Windows
         if: matrix.os.name == 'windows'
         run: |
           ..\..\CompileLua.bat
-      - name: Build with GNU Make
-        if: matrix.os.name != 'windows'
+      - name: Build for macOS
+        if: matrix.os.name == 'macos'
         run: |
-          make ${{ matrix.os.platform }}
+          # `make macosx` doesn't allow us to change MYCFLAGS/MYLDFLAGS
+          make all MYCFLAGS="-DLUA_USE_LINUX -arch arm64 -arch x86_64" MYLIBS="-lreadline" MYLDFLAGS="-arch arm64 -arch x86_64"
+      - name: Build for Linux
+        if: matrix.os.name == 'linux'
+        run: |
+          make linux
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -111,10 +137,11 @@ jobs:
           path: ${{ format(matrix.os.name == 'windows' && '{0}/src/lua.exe' || '{0}/src/lua', matrix.lua.directory) }}
           if-no-files-found: error
   merge-results:
+    name: Merge artifacts into one
     runs-on: ubuntu-latest
     needs: [build-lua, build-luajit, build-luau]
     steps:
-      - name: Merge artifacts into one
+      - name: Merge artifacts
         uses: actions/upload-artifact/merge@v4
         with:
           name: crosslua-build
