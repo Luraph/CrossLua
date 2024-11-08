@@ -6,7 +6,6 @@ on: push
 #- create releases?
 #- use permissions: for safety
 #- combine artifacts? and improve filenames
-#- make lua54 a submodule
 #- parallelized builds (public repos get allocated more cpus, so either accomodate that or use as many cpus as possible)
 #- cross compile since windows more expensive than linux and macos more expensive than windows (prob split into issue)
 #- add luraph repo wiki page for updating binaries
@@ -86,7 +85,7 @@ jobs:
 
           lipo -create -output luajit ../luajit-arm64 ../luajit-x64
       - name: Build with GNU Make
-        if: matrix.os.name == 'linux'
+        if: matrix.os.name == 'ubuntu'
         env:
           BUILDMODE: static
         run: |
@@ -127,7 +126,7 @@ jobs:
           # `make macosx` doesn't allow us to change MYCFLAGS/MYLDFLAGS
           make all MYCFLAGS="-DLUA_USE_LINUX -arch arm64 -arch x86_64" MYLIBS="-lreadline" MYLDFLAGS="-arch arm64 -arch x86_64"
       - name: Build for Linux
-        if: matrix.os.name == 'linux'
+        if: matrix.os.name == 'ubuntu'
         run: |
           make linux
       - name: Upload artifact

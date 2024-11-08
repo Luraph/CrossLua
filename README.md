@@ -7,9 +7,11 @@ Compile various Lua distribution binaries for common platforms. That's it. (*cur
 - :white_check_mark: Lua 5.1.5
 - :white_check_mark: Lua 5.2.4
 - :white_check_mark: Lua 5.3.6
-- :white_check_mark: Lua 5.4.6
+- :white_check_mark: Lua 5.4.7
 - :white_check_mark: LuaJIT (rolling)
 - :white_check_mark: Luau
+
+**WARNING:** Official Lua versions do not receive automatic Dependabot updates since there isn't a branch maintained that mirrors public releases.
 
 ## Useful Links
 - [Visit the Luraph Website](https://lura.ph/ "Luraph - Online Lua Obfuscation")
