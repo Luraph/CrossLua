@@ -11,7 +11,11 @@ on: push
 #- create releases?
 #- use defaults: to deduplicate entries in jobs
 #- use permissions: for safety
-#- combine artifacts?
+#- combine artifacts? and improve filenames
+#- make lua54 a submodule
+#- branch protection rules
+
+# FIRST: luau GOOD! luajit except windows GOOD!
 
 jobs:
   build-luau:
@@ -59,7 +63,9 @@ jobs:
         with:
           submodules: recursive
           sparse-checkout: luajit
-
+      - name: Setup MSVC environment
+        if: matrix.os.name == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1
       - name: Build with MSVC
         if: matrix.os.name == 'windows'
         run: |
@@ -68,7 +74,6 @@ jobs:
         if: matrix.os.name != 'windows'
         run: |
           MACOSX_DEPLOYMENT_TARGET=10.14 make amalg BUILDMODE=static
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -90,7 +95,9 @@ jobs:
         with:
           submodules: recursive
           sparse-checkout: ${{ matrix.lua.directory }}
-
+      - name: Setup MSVC environment
+        if: matrix.os.name == 'windows'
+        uses: ilammy/msvc-dev-cmd@v1
       - name: Build with MSVC
         if: matrix.os.name == 'windows'
         working-directory: ./${{ matrix.lua.directory }}
@@ -101,7 +108,6 @@ jobs:
         working-directory: ./${{ matrix.lua.directory }}/src
         run: |
           make ${{ matrix.os.platform }}
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
