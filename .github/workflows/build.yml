@@ -1,0 +1,102 @@
+name: Build Lua Distributions
+
+on: push
+
+# TODO:
+#- all builds (lua51, lua52, lua53, lua54, luajit, luau)
+#- macos fat binary, only rebuild when needed
+#- make sure windows normal lua binaries are compiled in release mode (and tbh confirm everything else is also)
+#- optimize builds to ensure that needless files are not being compiled (minimize the work being done)
+#- test and improve based on results
+#- create releases?
+
+jobs:
+  build-luau:
+    strategy:
+      matrix: # using ubuntu-20.04 to build a Linux binary targeting older glibc to improve compatibility
+        os: [{name: ubuntu, version: ubuntu-20.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
+    name: Build Luau (${{ matrix.os.name }})
+    runs-on: ${{ matrix.os.version }}
+    defaults:
+      run:
+        working-directory: ./luau
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          sparse-checkout: luau
+      - name: Configure with CMake
+        run: |
+          cmake . -DCMAKE_BUILD_TYPE=Release
+      - name: Build with CMake
+        run: |
+          cmake --build . --target Luau.Repl.CLI --config Release -j 2
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: luau-${{matrix.os.name}}
+          path: ${{ matrix.os.name == 'windows' && 'luau/Release/luau.exe' || 'luau/luau' }}
+          compression-level: 9
+  build-luajit:
+    strategy:
+      matrix: # using ubuntu-20.04 to build a Linux binary targeting older glibc to improve compatibility
+        os: [{name: ubuntu, version: ubuntu-20.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
+    name: Build LuaJIT (${{ matrix.os.name }})
+    runs-on: ${{ matrix.os.version }}
+    defaults:
+      run:
+        working-directory: ./luajit/src
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          sparse-checkout: luajit
+
+      - name: Build with MSVC
+        if: matrix.os.name == 'windows'
+        run: |
+          msvcbuild.bat amalg static
+      - name: Build with GNU Make
+        if: matrix.os.name != 'windows'
+        run: |
+          MACOSX_DEPLOYMENT_TARGET=10.14 make amalg BUILDMODE=static
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: luajit-${{matrix.os.name}}
+          path: ${{ matrix.os.name == 'windows' && 'luajit/src/luajit.exe' || 'luajit/src/luajit' }}
+          compression-level: 9
+  build-lua:
+    strategy:
+      matrix: # using ubuntu-20.04 to build a Linux binary targeting older glibc to improve compatibility
+        os: [{name: ubuntu, version: ubuntu-20.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
+        lua: [{name: '5.1', directory: lua51}, {name: '5.2', directory: lua52}, {name: '5.3', directory: lua53}, {name: '5.4', directory: lua54}]
+    name: Build Lua ${{ matrix.lua.name }} (${{ matrix.os.name }})
+    runs-on: ${{ matrix.os.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          sparse-checkout: ${{ matrix.lua.directory }}
+
+      - name: Build with MSVC
+        if: matrix.os.name == 'windows'
+        working-directory: ./${{ matrix.lua.directory }}
+        run: |
+          ../CompileLua.bat
+      - name: Build with GNU Make
+        if: matrix.os.name != 'windows'
+        working-directory: ./${{ matrix.lua.directory }}/src
+        run: |
+          make
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.lua.directory }}-${{matrix.os.name}}
+          path: ${{ format(matrix.os.name == 'windows' && '{0}/src/lua.exe' || '{0}/src/lua', matrix.lua.directory) }}
+          compression-level: 9
