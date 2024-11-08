@@ -3,10 +3,8 @@ name: Build Lua Distributions
 on: push
 
 # TODO:
-#- all builds (lua51, lua52, lua53, lua54, luajit, luau)
-#- macos fat binary, only rebuild when needed
-#- make sure windows normal lua binaries are compiled in release mode (and tbh confirm everything else is also)
-#- optimize builds to ensure that needless files are not being compiled (minimize the work being done)
+#- macos fat binary
+#- only rebuild when needed
 #- test and improve based on results
 #- create releases?
 #- use defaults: to deduplicate entries in jobs
@@ -14,8 +12,7 @@ on: push
 #- combine artifacts? and improve filenames
 #- make lua54 a submodule
 #- branch protection rules
-
-# FIRST: luau GOOD! luajit except windows GOOD!
+#- ensure builds are runnable
 
 jobs:
   build-luau:
@@ -45,7 +42,6 @@ jobs:
         with:
           name: luau-${{matrix.os.name}}
           path: ${{ matrix.os.name == 'windows' && 'luau/Release/luau.exe' || 'luau/luau' }}
-          compression-level: 9
           if-no-files-found: error
   build-luajit:
     strategy:
@@ -69,7 +65,7 @@ jobs:
       - name: Build with MSVC
         if: matrix.os.name == 'windows'
         run: |
-          .\msvcbuild.bat amalg static
+          .\msvcbuild.bat static
       - name: Build with GNU Make
         if: matrix.os.name != 'windows'
         run: |
@@ -79,7 +75,6 @@ jobs:
         with:
           name: luajit-${{matrix.os.name}}
           path: ${{ matrix.os.name == 'windows' && 'luajit/src/luajit.exe' || 'luajit/src/luajit' }}
-          compression-level: 9
           if-no-files-found: error
   build-lua:
     strategy:
@@ -89,6 +84,9 @@ jobs:
       fail-fast: false
     name: Build Lua ${{ matrix.lua.name }} (${{ matrix.os.name }})
     runs-on: ${{ matrix.os.version }}
+    defaults:
+      run:
+        working-directory: ./${{ matrix.lua.directory }}/src
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -100,12 +98,10 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
       - name: Build with MSVC
         if: matrix.os.name == 'windows'
-        working-directory: ./${{ matrix.lua.directory }}
         run: |
-          ../CompileLua.bat
+          ..\..\CompileLua.bat
       - name: Build with GNU Make
         if: matrix.os.name != 'windows'
-        working-directory: ./${{ matrix.lua.directory }}/src
         run: |
           make ${{ matrix.os.platform }}
       - name: Upload artifact
@@ -113,5 +109,16 @@ jobs:
         with:
           name: ${{ matrix.lua.directory }}-${{matrix.os.name}}
           path: ${{ format(matrix.os.name == 'windows' && '{0}/src/lua.exe' || '{0}/src/lua', matrix.lua.directory) }}
-          compression-level: 9
           if-no-files-found: error
+  merge-results:
+    runs-on: ubuntu-latest
+    needs: [build-lua, build-luajit, build-luau]
+    steps:
+      - name: Merge artifacts into one
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: crosslua-build
+          pattern: 'lua*'
+          separate-directories: true
+          delete-merged: true
+          compression-level: 9
