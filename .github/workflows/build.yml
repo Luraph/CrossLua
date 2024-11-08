@@ -2,9 +2,12 @@ name: Build Lua Distributions
 
 on: push
 
-permissions: {}
+permissions:
+  contents: read
+  #actions: read
 
 # TODO:
+# combine jobs to optimize github actions time
 #- create releases?
 #- use permissions: for safety
 #- combine artifacts? and improve filenames
