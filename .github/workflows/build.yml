@@ -38,7 +38,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: luau-${{ matrix.os.name }}
-          path: ${{ matrix.os.name == 'windows' && 'luau/Release/luau.exe' || 'luau/luau' }}
+          path: |
+            ${{ matrix.os.name == 'windows' && 'luau/Release/luau.exe' || 'luau/luau' }}
+            ${{ matrix.os.name == 'windows' && 'luau/Release/luau-compile.exe' || 'luau/luau-compile' }}
           if-no-files-found: error
   build-luajit:
     strategy:
