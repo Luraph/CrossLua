@@ -20,7 +20,7 @@ jobs:
         working-directory: ./luau
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           sparse-checkout: luau
@@ -54,7 +54,7 @@ jobs:
         working-directory: ./luajit/src
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           sparse-checkout: luajit
@@ -107,7 +107,7 @@ jobs:
         working-directory: ./${{ matrix.lua.directory }}/src
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
           sparse-checkout: ${{ matrix.lua.directory }}
