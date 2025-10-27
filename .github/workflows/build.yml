@@ -35,7 +35,7 @@ jobs:
         run: |
           cmake --build . --target Luau.Repl.CLI Luau.Compile.CLI --config Release -j 2
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: luau-${{ matrix.os.name }}
           path: |
@@ -89,7 +89,7 @@ jobs:
         run: |
           make amalg
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: luajit-${{ matrix.os.name }}
           path: ${{ matrix.os.name == 'windows' && 'luajit/src/luajit.exe' || 'luajit/src/luajit' }}
@@ -128,7 +128,7 @@ jobs:
         run: |
           make linux
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.lua.directory }}-${{matrix.os.name}}
           path: ${{ format(matrix.os.name == 'windows' && '{0}/src/lua.exe' || '{0}/src/lua', matrix.lua.directory) }}
@@ -141,7 +141,7 @@ jobs:
       contents: write
     steps:
       - name: Merge artifacts
-        uses: actions/upload-artifact/merge@v4
+        uses: actions/upload-artifact/merge@v5
         with:
           name: crosslua-build
           pattern: 'lua*'
