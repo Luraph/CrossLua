@@ -20,7 +20,7 @@ jobs:
         working-directory: ./luau
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           sparse-checkout: luau
@@ -35,7 +35,7 @@ jobs:
         run: |
           cmake --build . --target Luau.Repl.CLI Luau.Compile.CLI --config Release -j 2
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: luau-${{ matrix.os.name }}
           path: |
@@ -54,7 +54,7 @@ jobs:
         working-directory: ./luajit/src
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           sparse-checkout: luajit
@@ -89,7 +89,7 @@ jobs:
         run: |
           make amalg
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: luajit-${{ matrix.os.name }}
           path: ${{ matrix.os.name == 'windows' && 'luajit/src/luajit.exe' || 'luajit/src/luajit' }}
@@ -107,7 +107,7 @@ jobs:
         working-directory: ./${{ matrix.lua.directory }}/src
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           sparse-checkout: ${{ matrix.lua.directory }}
@@ -128,7 +128,7 @@ jobs:
         run: |
           make linux
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.lua.directory }}-${{matrix.os.name}}
           path: ${{ format(matrix.os.name == 'windows' && '{0}/src/lua.exe' || '{0}/src/lua', matrix.lua.directory) }}
@@ -141,7 +141,7 @@ jobs:
       contents: write
     steps:
       - name: Merge artifacts
-        uses: actions/upload-artifact/merge@v4
+        uses: actions/upload-artifact/merge@v6
         with:
           name: crosslua-build
           pattern: 'lua*'
@@ -150,7 +150,7 @@ jobs:
           compression-level: 9
       - name: Download merged artifact
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: crosslua-build
           path: crosslua-build
