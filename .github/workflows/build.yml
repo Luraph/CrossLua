@@ -10,8 +10,8 @@ permissions:
 jobs:
   build-luau:
     strategy:
-      matrix: # using ubuntu-20.04 to build a Linux binary targeting older glibc to improve compatibility
-        os: [{name: ubuntu, version: ubuntu-20.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
+      matrix: # using ubuntu-22.04 to build a Linux binary targeting older glibc to improve compatibility
+        os: [{name: ubuntu, version: ubuntu-22.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
       fail-fast: false
     name: Build Luau (${{ matrix.os.name }})
     runs-on: ${{ matrix.os.version }}
@@ -44,8 +44,8 @@ jobs:
           if-no-files-found: error
   build-luajit:
     strategy:
-      matrix: # using ubuntu-20.04 to build a Linux binary targeting older glibc to improve compatibility
-        os: [{name: ubuntu, version: ubuntu-20.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
+      matrix: # using ubuntu-22.04 to build a Linux binary targeting older glibc to improve compatibility
+        os: [{name: ubuntu, version: ubuntu-22.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
       fail-fast: false
     name: Build LuaJIT (${{ matrix.os.name }})
     runs-on: ${{ matrix.os.version }}
@@ -96,8 +96,8 @@ jobs:
           if-no-files-found: error
   build-lua:
     strategy:
-      matrix: # using ubuntu-20.04 to build a Linux binary targeting older glibc to improve compatibility
-        os: [{name: ubuntu, version: ubuntu-20.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
+      matrix: # using ubuntu-22.04 to build a Linux binary targeting older glibc to improve compatibility
+        os: [{name: ubuntu, version: ubuntu-22.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
         lua: [{name: '5.1', directory: lua51}, {name: '5.2', directory: lua52}, {name: '5.3', directory: lua53}, {name: '5.4', directory: lua54}, {name: '5.5', directory: lua55}]
       fail-fast: false
     name: Build Lua ${{ matrix.lua.name }} (${{ matrix.os.name }})
