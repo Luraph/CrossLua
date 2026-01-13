@@ -1,6 +1,11 @@
 name: Build Lua Distributions
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**' # prevents multiple ci actions from running on dependabot PRs
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
