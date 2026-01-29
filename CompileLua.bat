@@ -10,8 +10,27 @@
 ::
 
 :: Start local variable scope
-@SETLOCAL
+@SETLOCAL EnableExtensions EnableDelayedExpansion
 @ECHO ON
+
+:: Build sanitized args in CL_EXTRA
+set "CL_EXTRA="
+
+:ARG_LOOP
+if "%~1"=="" goto ARG_DONE
+
+set "arg=%~1"
+
+:: If arg begins with -D..., convert it to /D...
+if /I "!arg:~0,2!"=="-D" set "arg=/D!arg:~2!"
+
+:: Preserve quoting per-arg
+set "CL_EXTRA=!CL_EXTRA! "!arg!""
+
+shift
+goto ARG_LOOP
+
+:ARG_DONE
 
 :ENDSETUP
 
@@ -26,7 +45,7 @@
 @IF EXIST *.exe @DEL *.exe
 
 :: Compile all .c files into .obj
-@CL /nologo /MT /O2 /W3 /GL /c /D_CRT_SECURE_NO_DEPRECATE *.c
+@CL /nologo /MT /O2 /W3 /GL /c /D_CRT_SECURE_NO_DEPRECATE !CL_EXTRA! *.c
 
 :: Rename two special files
 @REN lua.obj lua.o

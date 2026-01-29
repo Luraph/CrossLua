@@ -96,8 +96,36 @@ jobs:
   build-lua:
     strategy:
       matrix: # using ubuntu-22.04 to build a Linux binary targeting older glibc to improve compatibility
-        os: [{name: ubuntu, version: ubuntu-22.04}, {name: macos, version: macos-latest}, {name: windows, version: windows-latest}]
-        lua: [{name: '5.1', directory: lua51}, {name: '5.2', directory: lua52}, {name: '5.3', directory: lua53}, {name: '5.4', directory: lua54}, {name: '5.5', directory: lua55}]
+        os: 
+          - name: ubuntu
+            version: ubuntu-22.04
+          - name: macos
+            version: macos-latest
+          - name: windows
+            version: windows-latest
+        lua:
+          - name: '5.1'
+            directory: lua51
+          - name: '5.2'
+            directory: lua52
+          - name: '5.3'
+            directory: lua53
+          - name: '5.3 (LUA_32BITS)'
+            directory: lua53
+            output: lua53-int32
+            options: "-DLUA_32BITS"
+          - name: '5.4'
+            directory: lua54
+          - name: '5.4 (LUA_32BITS)'
+            directory: lua54
+            output: lua54-int32
+            options: "-DLUA_32BITS"
+          - name: '5.5'
+            directory: lua55
+          - name: '5.5 (LUA_32BITS)'
+            directory: lua55
+            output: lua55-int32
+            options: "-DLUA_32BITS"
       fail-fast: false
     name: Build Lua ${{ matrix.lua.name }} (${{ matrix.os.name }})
     runs-on: ${{ matrix.os.version }}
@@ -116,20 +144,20 @@ jobs:
       - name: Build for Windows
         if: matrix.os.name == 'windows'
         run: |
-          ..\..\CompileLua.bat
+          ..\..\CompileLua.bat ${{ matrix.lua.options || '' }}
       - name: Build for macOS
         if: matrix.os.name == 'macos'
         run: |
           # `make macosx` doesn't allow us to change MYCFLAGS/MYLDFLAGS
-          make all MYCFLAGS="-DLUA_USE_LINUX -arch arm64 -arch x86_64" MYLIBS="-lreadline" MYLDFLAGS="-arch arm64 -arch x86_64"
+          make all MYCFLAGS="-DLUA_USE_LINUX ${{ matrix.lua.options || '' }} -arch arm64 -arch x86_64" MYLIBS="-lreadline" MYLDFLAGS="-arch arm64 -arch x86_64"
       - name: Build for Linux
         if: matrix.os.name == 'ubuntu'
         run: |
-          make linux
+          make linux MYCFLAGS="${{ matrix.lua.options || '' }}"
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
-          name: ${{ matrix.lua.directory }}-${{matrix.os.name}}
+          name: ${{ matrix.lua.output || matrix.lua.directory }}-${{matrix.os.name}}
           path: ${{ format(matrix.os.name == 'windows' && '{0}/src/lua.exe' || '{0}/src/lua', matrix.lua.directory) }}
           if-no-files-found: error
   merge-and-release:
